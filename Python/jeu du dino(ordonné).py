@@ -53,31 +53,27 @@ class Player:
 
 
 class Wall_g:
-    def __init__ (self, player, speed):
+    def __init__ (self, player):
         self.player = player
-        self.time = 0
-        self.speed = speed
-        self.color = (100, 100, 100)
-        self.width = 100
-        self.height = random.randint(100, 600)
-        self.wall = [-101, 900 - self.height, self.width, self.height]
-        self.rect = pygame.draw.rect(screen, self.color, self.wall)
+        self.speed = 3
         self.velocity = [-1, 0]
+        self.height = random.randint(100, 600)
+        self.color = (100, 100, 100)
+        self.wall = [-101, 900 - self.height, 100, self.height]
+        self.rect = pygame.draw.rect(screen, self.color, self.wall)
         self.spawn = False
     
-    def move (self, speed):
+    def move (self):
         self.wall[0] += self.velocity[0] * self.speed
         self.wall[1] += self.velocity[1] * self.speed
-        self.speed = speed
         speed = 0
         if self.rect[0] < -100 and self.spawn:
             self.height = random.randint(100, 600)
-            self.wall = [1800, 900 - self.height, self.width, self.height]
+            self.wall = [1800, 900 - self.height, 100, self.height]
             self.rect = pygame.draw.rect(screen, self.color, self.wall)
             speed = 1
             self.spawn = False
         return speed
-
 
     def physic (self):
         if self.player.rect[1] + 49 < self.rect[1] < self.player.rect[1] + 101 and self.player.rect[0] - 100 < self.rect[0] < self.player.rect[0] + 100:
@@ -124,6 +120,96 @@ class Wall_c(Wall_g):
 
 
 
+class Wall_spawner:
+    def __init__(self, walls_g, time):
+        self.walls_g = walls_g
+        self.time = time
+        self.timer = 0
+        self.spawn_recurrence = 180
+        self.counter = 1
+        self.speedlevel = 1
+        self.sec = False
+
+    def update(self):
+        #Augmentation de la vitesse
+        if self.time.time == 30 * self.speedlevel:
+            for wall in self.walls_g:
+                wall.speed += 1
+            self.speedlevel += 1
+            if self.spawn_recurrence > 30:
+                self.spawn_recurrence += -10
+                self.timer += -10
+        
+        if random.randint(0,self.spawn_recurrence) == 1 and self.timer == self.spawn_recurrence:
+            self.timer = 0
+            if self.counter == 1:
+                self.walls_g[0].spawn = True
+                self.counter = 2
+            elif self.counter == 2:
+                self.walls_g[1].spawn = True
+                self.counter = 3
+            elif self.counter == 3:
+                self.walls_g[2].spawn = True
+                self.counter = 4
+            elif self.counter == 4:
+                self.walls_g[3].spawn = True
+                self.counter = 5
+            elif self.counter == 5:
+                self.walls_g[4].spawn = True
+                self.counter = 1
+        elif self.timer == self.spawn_recurrence:
+            self.timer = self.timer
+        else:
+            self.timer += 1
+
+
+
+
+
+
+
+
+class HUD:
+    def __init__(self, wall_spawner, player, time):
+        self.score = 0
+        self.wall_spawner = wall_spawner
+        self.time = time
+        self.player = player
+        pygame.font.init()
+        self.my_font = pygame.font.SysFont('Comic Sans MS', 30)
+    
+    def draw (self, screen):
+        text_score = self.my_font.render(f'Score : {self.score}', False, (255, 255, 255))
+        text_walls_speed = self.my_font.render(f'Speed of the walls : {self.wall_spawner.speedlevel}', False, (255, 255, 255))
+        text_time = self.my_font.render(f'Time : {self.time.time}', False, (255, 255, 255))
+        text_self_speed = self.my_font.render(f'Your speed : {self.player.velocity}', False, (255, 255, 255))
+        screen.blit(text_score, (0,0))
+        screen.blit(text_walls_speed, (0,30))
+        screen.blit(text_time, (0,60))
+        screen.blit(text_self_speed, (0,90))
+
+
+
+
+
+class Time:
+    def __init__(self):
+        self.clock = pygame.time.Clock()
+        self.tick = 0
+        self.time = 0
+
+    def fps(self, fps, wall_spawner):
+        self.wall_spawner = wall_spawner
+        self.clock.tick(fps)
+        self.tick += 1
+        if self.tick == 60:
+            self.time += 1
+            self.tick = 0
+            self.wall_spawner.sec = True
+
+
+
+
 
 
 
@@ -131,29 +217,14 @@ class Game:
     def __init__ (self, screen):
         self.screen = screen
         self.running = True
-        self.clock = pygame.time.Clock()
         self.player = Player(0, 0)
-        self.wall_timer = 0
-        self.wall_counter = 1
-        self.wall_speed = 3
-        self.wall_speedlevel = 1
-        self.wall_g = Wall_g(self.player, self.wall_speed)
-        self.wall_g2 = Wall_g(self.player, self.wall_speed)
-        self.wall_g3 = Wall_g(self.player, self.wall_speed)
-        self.wall_g4 = Wall_g(self.player, self.wall_speed)
-        self.wall_g5 = Wall_g(self.player, self.wall_speed)
-        pygame.font.init()
-        self.my_font = pygame.font.SysFont('Comic Sans MS', 30)
-        self.score = 0
-        self.score_past = 1
-        self.time = 0
-        self.tick = 0
-        self.text_surface = self.my_font.render(f'Score : {self.score}', False, (255, 255, 255))
-        self.text_surface2 = self.my_font.render(f'Speed of the walls : {self.wall_speedlevel}', False, (255, 255, 255))
-        self.text_surface3 = self.my_font.render(f'Time : {self.time}', False, (255, 255, 255))
-        self.text_surface4 = self.my_font.render(f'Your speed : {self.player.velocity}', False, (255, 255, 255))
+        self.time = Time()
+        self.walls_g = [Wall_g(self.player) for i in range(0,5)]
+        self.wall_spawner = Wall_spawner(self.walls_g, self.time)
+        self.hud = HUD(self.wall_spawner, self.player, self.time)
 
     def handling_events (self):
+        #Quitter le jeu
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -167,8 +238,6 @@ class Game:
                     self.player.double_jump = False
                 if event.key == pygame.K_s and self.player.in_air:
                     self.player.velocity[1] += 50
-
-        
         #Mouvements droite/guauche
         keys = pygame.key.get_pressed()
         if keys[pygame.K_q]:
@@ -177,34 +246,22 @@ class Game:
         if keys[pygame.K_d]:
             if self.player.velocity[0] < 10:
                 self.player.velocity[0] += 2
-     
+    
     def update(self):
         self.player.move()
         self.player.physic()
-        self.score += self.wall_g.move(self.wall_speed) + self.wall_g2.move(self.wall_speed) + self.wall_g3.move(self.wall_speed) + self.wall_g4.move(self.wall_speed) + self.wall_g5.move(self.wall_speed)
-        self.running = self.wall_g.physic() and self.wall_g2.physic() and self.wall_g3.physic() and self.wall_g4.physic() and self.wall_g5.physic()
-        if self.time == 30 * self.wall_speedlevel:
-            self.wall_speed += 1
-            self.wall_speedlevel += 1
-
-
-    
+        self.wall_spawner.update()
+        for wall in self.walls_g:
+            self.hud.score += wall.move()
+        #Mort
+        self.running = self.walls_g[0].physic() and self.walls_g[1].physic() and self.walls_g[2].physic() and self.walls_g[3].physic() and self.walls_g[4].physic()
+        
     def display(self):
         self.screen.fill((0, 0, 0))
         self.player.draw(self.screen)
-        self.wall_g.draw(self.screen)
-        self.wall_g2.draw(self.screen)
-        self.wall_g3.draw(self.screen)
-        self.wall_g4.draw(self.screen)
-        self.wall_g5.draw(self.screen)
-        self.text_surface = self.my_font.render(f'Score : {self.score}', False, (255, 255, 255))
-        self.text_surface2 = self.my_font.render(f'Speed : {self.wall_speedlevel}', False, (255, 255, 255))
-        self.text_surface3 = self.my_font.render(f'Time : {self.time}', False, (255, 255, 255))
-        self.text_surface4 = self.my_font.render(f'Your speed : {self.player.velocity}', False, (255, 255, 255))
-        self.screen.blit(self.text_surface, (0,0))
-        self.screen.blit(self.text_surface2, (0,30))
-        self.screen.blit(self.text_surface3, (0,60))
-        self.screen.blit(self.text_surface4, (0,90))
+        for wall in self.walls_g:
+            wall.draw(self.screen)
+        self.hud.draw(self.screen)
         pygame.display.flip()
     
     def run(self):
@@ -216,36 +273,7 @@ class Game:
             if not self.running:
                 break
             self.display()
-            #Gestion du temps
-            self.clock.tick(60)
-            self.tick += 1
-            if self.tick == 60:
-                self.time += 1
-                self.tick = 0
-                print(random.randint(0,2))
-                #Spawn des murs
-                if random.randint(0,1) == 1 and self.wall_timer == 2:
-                    self.wall_timer = 0
-                    if self.wall_counter == 1:
-                        self.wall_g.spawn = True
-                        self.wall_counter = 2
-                    elif self.wall_counter == 2:
-                        self.wall_g2.spawn = True
-                        self.wall_counter = 3
-                    elif self.wall_counter == 3:
-                        self.wall_g3.spawn = True
-                        self.wall_counter = 4
-                    elif self.wall_counter == 4:
-                        self.wall_g4.spawn = True
-                        self.wall_counter = 5
-                    elif self.wall_counter == 5:
-                        self.wall_g5.spawn = True
-                        self.wall_counter = 1
-                elif self.wall_timer == 2:
-                    self.wall_timer = self.wall_timer
-                else:
-                    self.wall_timer += 1
-
+            self.time.fps(60, self.wall_spawner)
 
 
 
