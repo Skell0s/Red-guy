@@ -55,11 +55,11 @@ class Player:
 class Wall_g:
     def __init__ (self, player, speed):
         self.player = player
+        self.time = 0
         self.speed = speed
         self.color = (100, 100, 100)
         self.width = 100
         self.height = random.randint(100, 600)
-        self.dist = random.randint(6, 16) * 500
         self.wall = [-101, 900 - self.height, self.width, self.height]
         self.rect = pygame.draw.rect(screen, self.color, self.wall)
         self.velocity = [-1, 0]
@@ -99,15 +99,31 @@ class Wall_g:
             self.player.in_air = True
             return True
         
-
-
     def draw (self, screen):
         self.rect = pygame.draw.rect(screen, self.color, self.wall)
 
 
 
 
-    
+
+
+
+
+
+
+
+class Wall_c(Wall_g):
+    def __init__(self):
+        super().__init__()
+        self.wall = [-101, self.height, self.width, self.height]
+
+
+
+
+
+
+
+
 
 
 
@@ -206,8 +222,9 @@ class Game:
             if self.tick == 60:
                 self.time += 1
                 self.tick = 0
+                print(random.randint(0,2))
                 #Spawn des murs
-                if random.randint(0,2) == 1 and self.wall_timer == 2:
+                if random.randint(0,1) == 1 and self.wall_timer == 2:
                     self.wall_timer = 0
                     if self.wall_counter == 1:
                         self.wall_g.spawn = True
