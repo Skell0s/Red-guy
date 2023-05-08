@@ -84,6 +84,7 @@ class Wall_g:
             return True
         
 
+
     def draw (self, screen):
         self.rect = pygame.draw.rect(screen, self.color, self.wall)
 
