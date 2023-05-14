@@ -1,5 +1,6 @@
 import pygame
 import random
+import math 
 
 
 class Player:
@@ -68,7 +69,7 @@ class Wall_g:
         self.wall[1] += self.velocity[1] * self.speed
         speed = 0
         if self.rect[0] < -100 and self.spawn:
-            self.height = random.randint(100, 600)
+            self.height = random.randint(200, 700)
             self.wall = [1800, 900 - self.height, 100, self.height]
             self.rect = pygame.draw.rect(screen, self.color, self.wall)
             speed = 1
@@ -108,10 +109,60 @@ class Wall_g:
 
 
 
-class Wall_c(Wall_g):
-    def __init__(self):
-        super().__init__()
-        self.wall = [-101, self.height, self.width, self.height]
+class Wall_c():
+    def __init__ (self, player, time):
+        self.player = player
+        self.time = time
+        self.speed = 3
+        self.velocity = [-1, 0]
+        self.height = random.randint(100, 600)
+        self.color = (100, 100, 100)
+        self.wall = [-101, 0, 100, self.height]
+        self.rect = pygame.draw.rect(screen, self.color, self.wall)
+        self.spawn = False
+        self.random_speed = random.randint(0, 3)
+        self.random_speed_j = random.randint(0, 700)
+        self.move = False
+        if random.randint(0,6) == 1:
+            self.move = True
+        else:
+            self.move = False
+    
+    def move (self):
+        self.wall[0] += self.velocity[0] * self.speed - self.random_speed
+        self.wall[1] += self.velocity[1] * self.speed
+        speed = 0
+        if self.rect[0] < -100 and self.spawn:
+            self.height = random.randint(200, 700)
+            self.wall = [1800, 0, 100, self.height]
+            self.rect = pygame.draw.rect(screen, self.color, self.wall)
+            self.random_speed = random.uniform(-1, 1.5) * 2
+            self.random_speed_j = random.randint(0, 700)
+            speed = 1
+            self.spawn = False
+        if self.move:
+            self.height = 100 + self.random_speed_j * math.sin(((2*math.pi)/120)*(self.time.tick))
+        return speed
+
+    def physic (self):
+        if self.height > self.player.rect[1] > self.height - 30 and self.player.rect[0] - 100 < self.rect[0] < self.player.rect[0] + 100:
+            self.player.velocity[1] = 0
+            self.player.rect[1] = self.height + 1
+            return True
+        elif self.player.rect[0] - 100 < self.rect[0] < self.player.rect[0] and self.height > self.player.rect[1]:
+            self.player.rect[0] = self.rect[0] + 100
+            self.player.rect[0] += self.velocity[0]
+            return False
+        elif self.player.rect[0] < self.rect[0] < self.player.rect[0] + 100 and self.height > self.player.rect[1]:
+            self.player.rect[0] = self.rect[0] - 101
+            return False
+        else:
+            self.player.in_air = True
+            return True
+        
+    def draw (self, screen):
+        self.wall[3] = self.height
+        self.rect = pygame.draw.rect(screen, self.color, self.wall)
 
 
 
@@ -121,46 +172,83 @@ class Wall_c(Wall_g):
 
 
 class Wall_spawner:
-    def __init__(self, walls_g, time):
+    def __init__(self, walls_g, walls_c, time):
         self.walls_g = walls_g
+        self.walls_c = walls_c
         self.time = time
-        self.timer = 0
-        self.spawn_recurrence = 180
-        self.counter = 1
+        self.timer_g = 0
+        self.timer_c = 0
+        self.spawn_recurrence = 70
+        self.random_spawn_recurrence = 30
+        self.counter_g = 1
+        self.counter_c = 1
         self.speedlevel = 1
         self.sec = False
+        self.spawn_g = False
+        self.spawn_c = True
 
     def update(self):
         #Augmentation de la vitesse
-        if self.time.time == 30 * self.speedlevel:
+        if self.time.time == 15 * self.speedlevel:
             for wall in self.walls_g:
+                wall.speed += 1
+            for wall in self.walls_c:
                 wall.speed += 1
             self.speedlevel += 1
             if self.spawn_recurrence > 30:
-                self.spawn_recurrence += -10
-                self.timer += -10
-        
-        if random.randint(0,self.spawn_recurrence) == 1 and self.timer == self.spawn_recurrence:
-            self.timer = 0
-            if self.counter == 1:
+                if self.timer_g == self.spawn_recurrence:
+                    self.timer_g += -1
+                if self.timer_c == self.spawn_recurrence:
+                    self.timer_c += -1
+                self.spawn_recurrence += -1
+        #Walls_g
+        if random.randint(0,self.random_spawn_recurrence) == 1 and self.timer_g == self.spawn_recurrence and self.spawn_c:
+            self.spawn_g = True
+            self.spawn_c = False
+            self.timer_g = 0
+            if self.counter_g == 1:
                 self.walls_g[0].spawn = True
-                self.counter = 2
-            elif self.counter == 2:
+                self.counter_g = 2
+            elif self.counter_g == 2:
                 self.walls_g[1].spawn = True
-                self.counter = 3
-            elif self.counter == 3:
+                self.counter_g = 3
+            elif self.counter_g == 3:
                 self.walls_g[2].spawn = True
-                self.counter = 4
-            elif self.counter == 4:
+                self.counter_g = 4
+            elif self.counter_g == 4:
                 self.walls_g[3].spawn = True
-                self.counter = 5
-            elif self.counter == 5:
+                self.counter_g = 5
+            elif self.counter_g == 5:
                 self.walls_g[4].spawn = True
-                self.counter = 1
-        elif self.timer == self.spawn_recurrence:
-            self.timer = self.timer
-        else:
-            self.timer += 1
+                self.counter_g = 1
+        elif self.timer_g == self.spawn_recurrence:
+            self.timer_g = self.timer_g
+        elif self.spawn_c:
+            self.timer_g += 1
+        #walls_c
+        if random.randint(0,self.random_spawn_recurrence) == 1 and self.timer_c == self.spawn_recurrence and self.spawn_g:
+            self.spawn_c = True
+            self.spawn_g = False
+            self.timer_c = 0
+            if self.counter_c == 1:
+                self.walls_c[0].spawn = True
+                self.counter_c = 2
+            elif self.counter_c == 2:
+                self.walls_c[1].spawn = True
+                self.counter_c = 3
+            elif self.counter_c == 3:
+                self.walls_c[2].spawn = True
+                self.counter_c = 4
+            elif self.counter_c == 4:
+                self.walls_c[3].spawn = True
+                self.counter_c = 5
+            elif self.counter_c == 5:
+                self.walls_c[4].spawn = True
+                self.counter_c = 1
+        elif self.timer_c == self.spawn_recurrence:
+            self.timer_c = self.timer_c
+        elif self.spawn_g:
+            self.timer_c += 1
 
 
 
@@ -217,10 +305,11 @@ class Game:
     def __init__ (self, screen):
         self.screen = screen
         self.running = True
-        self.player = Player(0, 0)
+        self.player = Player(0, 800)
         self.time = Time()
         self.walls_g = [Wall_g(self.player) for i in range(0,5)]
-        self.wall_spawner = Wall_spawner(self.walls_g, self.time)
+        self.walls_c = [Wall_c(self.player, self.time) for i in range(0,5)]
+        self.wall_spawner = Wall_spawner(self.walls_g, self.walls_c, self.time)
         self.hud = HUD(self.wall_spawner, self.player, self.time)
 
     def handling_events (self):
@@ -253,13 +342,17 @@ class Game:
         self.wall_spawner.update()
         for wall in self.walls_g:
             self.hud.score += wall.move()
+        for wall in self.walls_c:
+            self.hud.score += wall.move()
         #Mort
-        self.running = self.walls_g[0].physic() and self.walls_g[1].physic() and self.walls_g[2].physic() and self.walls_g[3].physic() and self.walls_g[4].physic()
+        self.running = self.walls_g[0].physic() and self.walls_g[1].physic() and self.walls_g[2].physic() and self.walls_g[3].physic() and self.walls_g[4].physic() and self.walls_c[0].physic() and self.walls_c[1].physic() and self.walls_c[2].physic() and self.walls_c[3].physic() and self.walls_c[4].physic()
         
     def display(self):
         self.screen.fill((0, 0, 0))
         self.player.draw(self.screen)
         for wall in self.walls_g:
+            wall.draw(self.screen)
+        for wall in self.walls_c:
             wall.draw(self.screen)
         self.hud.draw(self.screen)
         pygame.display.flip()
