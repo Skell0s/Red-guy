@@ -597,7 +597,7 @@ class Cloud:
         else:
             self.cloud = pygame.image.load("Nuage4.png").convert_alpha()
         self.speed = random.random()
-        self.height = random.randint(0, self.display_x * 0.20)
+        self.height = random.randint(0, self.display_x * 0.20) #X 
         self.co = [self.display_x, self.height]
     
     def update(self):
@@ -692,10 +692,10 @@ class Game:
             #Saut
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and self.player.touch_floor:
-                    self.player.velocity[1] += -15
+                    self.player.velocity[1] += -18
                     self.player.touch_floor = False
                 elif event.key == pygame.K_SPACE and self.player.double_jump:
-                    self.player.velocity[1] += -15
+                    self.player.velocity[1] += -18
                     self.player.double_jump = False
                 #Dash vers le bas
                 if event.key == pygame.K_s:
@@ -799,10 +799,12 @@ class Game:
 pygame.init()
 co = pygame.display.get_desktop_sizes()
 coo = co[0]
-x = coo[0]
-y = coo[1]
+x = 1530 #coo[0]
+y = 960 #coo[1]
 screen = pygame.display.set_mode((x, y))
 game = Game(screen, x, y)
 game.run()
+print(f"x = {x}")
+print(f"y = {y}")
 
 pygame.quit()
